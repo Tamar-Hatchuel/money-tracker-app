@@ -1,69 +1,76 @@
-import { useState } from "react";
-import AuthForm from "@/components/AuthForm";
-import Header from "@/components/Header";
-import Dashboard from "@/components/Dashboard";
-import TransactionModal from "@/components/TransactionModal";
+// src/pages/Index.tsx
+
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import AuthForm from "@/components/ui/AuthForm";
+import Header from "@/components/ui/Header";
+import Dashboard from "@/components/ui/Dashboard";
+import TransactionModal from "@/components/ui/TransactionModal";
 import { useToast } from "@/hooks/use-toast";
 
-const Index = () => {
+export default function IndexPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [showTransactionModal, setShowTransactionModal] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
+  // On mount, check existing session and subscribe to auth changes
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) setIsAuthenticated(true);
+    });
+
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        if (event === "SIGNED_IN") setIsAuthenticated(true);
+        if (event === "SIGNED_OUT") setIsAuthenticated(false);
+      }
+    );
+
+    return () => {
+      listener.subscription.unsubscribe();
+    };
+  }, []);
+
+  // Sign‐in handler
   const handleSignIn = async (email: string, password: string) => {
-    // Simulate authentication
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setIsAuthenticated(true);
+    setIsLoading(true);
+    const { error } = await supabase.auth.signIn({ email, password });
+    setIsLoading(false);
+
+    if (error) {
+      toast({
+        title: "Sign in failed",
+        description: error.message,
+        variant: "destructive",
+      });
+      return;
+    }
+
     toast({
       title: "Welcome back!",
-      description: "You've successfully signed in to SpendTrack.",
+      description: "You've successfully signed in.",
     });
   };
 
+  // Sign‐up handler
   const handleSignUp = async (email: string, password: string) => {
-    // Simulate account creation
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setIsAuthenticated(true);
-    toast({
-      title: "Account created!",
-      description: "Welcome to SpendTrack! ✨",
+    setIsLoading(true);
+
+    // 1️⃣ Create the auth user
+    const { data: authData, error: signUpError } = await supabase.auth.signUp({
+      email,
+      password,
     });
-  };
+    if (signUpError) {
+      setIsLoading(false);
+      toast({
+        title: "Sign up failed",
+        description: signUpError.message,
+        variant: "destructive",
+      });
+      return;
+    }
 
-  const handleLogout = () => {
-    setIsAuthenticated(false);
-    toast({
-      title: "Signed out",
-      description: "You've been successfully signed out.",
-    });
-  };
-
-  if (!isAuthenticated) {
-    return (
-      <AuthForm 
-        onSignIn={handleSignIn}
-        onSignUp={handleSignUp}
-      />
-    );
-  }
-
-  return (
-    <div className="min-h-screen bg-background">
-      <Header 
-        onLogoutClick={handleLogout}
-        onProfileClick={() => toast({ title: "Profile", description: "Profile settings coming soon!" })}
-      />
-      
-      <main>
-        <Dashboard onAddTransaction={() => setShowTransactionModal(true)} />
-      </main>
-
-      <TransactionModal
-        open={showTransactionModal}
-        onOpenChange={setShowTransactionModal}
-      />
-    </div>
-  );
-};
-
-export default Index;
+    // 2️⃣ Insert a matching profile row
+    const user = authData.user!;
+    const { error: profileError } = await sup
