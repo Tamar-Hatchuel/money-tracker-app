@@ -61,6 +61,19 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				/* Pastel rainbow theme colors */
+				sky: {
+					DEFAULT: 'hsl(var(--sky))',
+					foreground: 'hsl(var(--sky-foreground))'
+				},
+				peach: {
+					DEFAULT: 'hsl(var(--peach))',
+					foreground: 'hsl(var(--peach-foreground))'
+				},
+				sunshine: {
+					DEFAULT: 'hsl(var(--sunshine))',
+					foreground: 'hsl(var(--sunshine-foreground))'
 				}
 			},
 			borderRadius: {
