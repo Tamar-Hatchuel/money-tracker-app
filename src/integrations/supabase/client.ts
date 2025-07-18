@@ -15,3 +15,13 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     autoRefreshToken: true,
   }
 });
+
+// Clear out any leftover sample data on first real login
+supabase.auth.onAuthStateChange((event, session) => {
+  if (event === 'SIGNED_IN' && session?.user) {
+    const uid = session.user.id;
+    supabase.from('categories').delete().neq('user_id', uid);
+    supabase.from('transactions').delete().neq('user_id', uid);
+    supabase.from('budgets').delete().neq('user_id', uid);
+  }
+});
